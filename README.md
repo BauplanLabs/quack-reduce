@@ -146,9 +146,11 @@ At the end of the tiny DAG, you will end up with a new folder (and file) in the 
 
 [ NOTE: the sql files in `dbt/models/taxi' reference directly files in the bucket, so any changes you made to the setup script should be reflected here as well. ]
 
-Now that we have a materialized view produced by our pipeline, it is time to query it! To run the front-end (a dashboard built with streamlit) go into the `dashboard` folder and run `streamlit run dashboard.py`. A page should open in the browser, displaying a chart: you can use the form to interact in real time with the dataset, through the serverless infrastructure we built.
+Now that we have a materialized view produced by our pipeline, it is time to query it! To run the front-end (a dashboard built with streamlit) go into the `dashboard` folder and run `streamlit run dashboard.py`. A page should open in the browser, displaying a chart:
 
-LOOM HERE AS AN EXAMPLE
+![Chart of popular locations in the BI tool.](images/streamlit.png)
+
+You can use the form to interact in real time with the dataset (video [here](https://www.loom.com/share/9d5de3ba822a445d9d117225c1b0307f)), through the serverless infrastructure we built.
 
 ### From quack to quack-reduce
 
