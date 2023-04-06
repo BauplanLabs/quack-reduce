@@ -152,6 +152,9 @@ def runner(
         query = "SELECT COUNT(*) AS COUNTS FROM read_parquet(['{}'])".format(target_file)
         # since this is a test query, we force debug to be True
         rows, metadata = fetch_all(query, limit, display=True, is_debug=True)
+    else:
+        # run the query as it is
+        rows, metadata = fetch_all(query, limit, display=True, is_debug=is_debug)
 
     return
 
