@@ -100,7 +100,11 @@ but be mindful of the infrastructure constraints!
 
 ### Building a serverless BI
 
-TBC
+
+
+To run the front-end (a dashboard with streamlit) cd into `streamlit` and run `streamlit run dashboard.py`. A page should open in the browser, displaying a chart: you can use the form to interact in real time with the dataset, through the serverless infrastructure we built.
+
+VIDEO HERE
 
 ### From quack to quack-reduce
 

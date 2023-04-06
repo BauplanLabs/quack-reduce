@@ -11,7 +11,9 @@ Check the README.md file for more details.
 
 
 import os
+import time
 import boto3
+import pandas as pd
 import json
 from rich.console import Console
 from rich.table import Table
@@ -52,30 +54,39 @@ def invoke_lambda(json_payload_as_str: str):
 def fetch_all(
     query: str,
     limit: int,
+    display: bool=False,
     is_debug = False
-):
+)-> pd.DataFrame:
     """
     Get results from lambda and display them
     """
     if is_debug:
         print("Running query: {}, with limit: {}".format(query, limit))
     # run the query
+    start_time = time.time()
     response = invoke_lambda(json.dumps({'q': query, 'limit': limit}))
+    roundtrip_time =  int((time.time() - start_time) * 1000.0)
     # check for errors first
     if 'errorMessage' in response:
         print("Error: {}".format(response['errorMessage']))
-        return
+        # just raise an exception now as we don't have a proper error handling
+        raise Exception(response['errorMessage'])
     # no error returned, display the results
     if is_debug:
         print("Debug reponse: {}".format(response))
 
     rows = response['data']['records']
-    console = Console()
-    display_query_metadata(console, response['metadata'])
-    display_table(console, rows)
-    
+    # display in the console if required
+    if display:
+        console = Console()
+        display_query_metadata(console, response['metadata'])
+        display_table(console, rows)
 
-    return
+    # add the roundtrip time to the metadata
+    response['metadata']['roundtrip_time'] = roundtrip_time
+    
+    # return the results as a pandas dataframe and metadata
+    return pd.DataFrame(rows), response['metadata']
 
 
 def display_query_metadata(
@@ -141,18 +152,36 @@ def runner(
         target_file = 's3://{}/dataset/taxi_2019_04.parquet'.format(bucket)
         query = "SELECT COUNT(*) AS COUNTS FROM read_parquet(['{}'])".format(target_file)
         # since this is a test query, we force debug to be True
-        rows = fetch_all(query, limit, is_debug=True)
+        rows, metadata = fetch_all(query, limit, display=True, is_debug=True)
 
     return
 
 
 if __name__ == "__main__":
-   # get args from command line
-
-   # run the main function
-   runner(
-       bucket=os.environ['S3_BUCKET'],
-       query=None,
-       limit=10,
-       is_debug=False
-   )
+    # get args from command line
+    import argparse
+    # declare basic arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-q",
+        type=str,
+        help="query", 
+        default=None)
+    parser.add_argument(
+        "-limit",
+        type=int,
+        help="max rows to return from the lambda",
+        default=10)
+    parser.add_argument(
+        "--debug", 
+        action="store_true",
+        help="increase output verbosity",
+        default=False)
+    args = parser.parse_args()
+    # run the main function
+    runner(
+        bucket=os.environ['S3_BUCKET'],
+        query=args.q,
+        limit=args.limit,
+        is_debug=args.debug
+    )

@@ -18,55 +18,40 @@ from dotenv import load_dotenv
 # get the environment variables from the .env file
 load_dotenv('../.env')
 assert os.environ['S3_BUCKET'], "S3_BUCKET is not set"
+S3_BUCKET = os.environ['S3_BUCKET']
+PARQUET_FILE = 's3://{}/dataset/taxi_2019_04.parquet'.format(S3_BUCKET)
 
-# import from the bauplan script
+# import querying functoin from the runner
 sys.path.insert(0,'..')
-from quack import invoke_lambda
-
+from quack import fetch_all
 # build up the dashboard
 st.markdown("# Trip Dashboard")
 st.write("This dashboard shows KPIs for our taxi business.")
 st.header("Trips by pickup location (map id)")
-# hard code the columns for now
-COLS = ['PICKUP_LOCATION_ID', '# TRIPS']
-
-
-def parse_response(response, cols):
-    if 'data' in response and response['data']['results']:
-        # for debug
-        # print(response)
-        return pd.DataFrame(response['data']['results'], columns=cols)
-
-    return None
-
+# hardcode the columns
+COLS = ['PICKUP_LOCATION_ID', 'TRIPS']
 
 # get the total row count
-target_parquet_file = 's3://{}/{}/{}.parquet'.format(
-        S3_DUMP_BUCKET,
-        S3_NAMESPACE_FOLDER,
-        'counts_single'  # TODO: make this configurable
-    )
-count_query = "SELECT COUNT(*) as C FROM read_parquet(['{}'])".format(target_parquet_file)
-response = invoke_serverless_duckdb(
-        function_name=LAMBDA_NAME,
-        arguments={ 'q': count_query },
-        serverless_framework='lambda'
-    )
-df = parse_response(response, cols=['C'])
+query = "SELECT COUNT(*) AS C FROM read_parquet(['{}'])".format(PARQUET_FILE)
+df, metadata = fetch_all(query, limit=1, display=False, is_debug=False)
 st.write("Total row count: {}".format(df['C'][0]))
 
 # get the interactive chart
-base_query = "SELECT * FROM read_parquet(['{}']) ORDER BY 2 DESC".format(target_parquet_file)
-top_k_products = st.text_input('# of pickup locations', '5')
-query_template = "{} LIMIT {};".format(base_query, top_k_products)
-final_query = query_template.format(top_k_products)
-response =invoke_serverless_duckdb(
-        function_name=LAMBDA_NAME,
-        arguments={ 'q': final_query },
-        serverless_framework='lambda'
-    )
-df = parse_response(response,  cols=COLS)
+base_query = """
+    SELECT 
+        pickup_location_id AS {}, 
+        COUNT(*) AS {} 
+    FROM 
+        read_parquet(['{}']) 
+    GROUP BY 1
+    ORDER BY 2 DESC
+    """.format(COLS[0], COLS[1], PARQUET_FILE)
+top_k = st.text_input('# of pickup locations', '5')
+# add a limit to the query based on the user input
+final_query = "{} LIMIT {};".format(base_query, top_k).format(top_k)
+df, metadata = fetch_all(final_query, limit=int(top_k), display=False, is_debug=False)
 
+# if no error is returned, we plot the data
 if df is not None:
     fig = plt.figure(figsize=(10,5))
     sns.barplot(
@@ -79,3 +64,9 @@ if df is not None:
     st.pyplot(fig)
 else:
     st.write("Sorry, something went wrong :-(")
+
+# display metadata
+st.write("Roundtrip ms: {}".format(metadata['roundtrip_time']))
+st.write("Query exec. time ms: {}".format(metadata['timeMs']))
+st.write("Lambda is warm: {}".format(metadata['warm']))
+        
