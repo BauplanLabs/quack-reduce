@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+*.parquet
+
+.serverless/
+
+.DS_Store

@@ -1,0 +1,21 @@
+name: 'taxi_dashboard'
+version: '1.0.0'
+
+config-version: 2
+profile: 'duckdb-taxi'
+source-paths: ["models"]
+analysis-paths: ["analysis"]
+test-paths: ["tests"]
+data-paths: ["data"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target" 
+clean-targets: 
+  - "target"
+  - "dbt_modules"
+
+models:
+  taxi:
+    foundation:
+      +materialized: view
