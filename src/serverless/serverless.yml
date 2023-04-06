@@ -1,0 +1,18 @@
+service: quack-reduce-lambda
+useDotenv: true
+
+provider:
+  name: aws
+  memorySize: 3008
+  timeout: 600
+  ecr:
+    images:
+      quackimageblog:
+        path: ./
+
+functions:
+  duckdb:
+    ephemeralStorageSize: 3008
+    image:
+      name: quackimageblog
+
