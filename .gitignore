@@ -131,3 +131,5 @@ dmypy.json
 *.parquet
 
 .serverless/
+
+.DS_Store

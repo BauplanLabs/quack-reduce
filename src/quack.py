@@ -76,14 +76,13 @@ def fetch_all(
         print("Debug reponse: {}".format(response))
 
     rows = response['data']['records']
+    # add the roundtrip time to the metadata
+    response['metadata']['roundtrip_time'] = roundtrip_time
     # display in the console if required
     if display:
         console = Console()
         display_query_metadata(console, response['metadata'])
         display_table(console, rows)
-
-    # add the roundtrip time to the metadata
-    response['metadata']['roundtrip_time'] = roundtrip_time
     
     # return the results as a pandas dataframe and metadata
     return pd.DataFrame(rows), response['metadata']

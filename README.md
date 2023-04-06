@@ -72,6 +72,36 @@ If you check your AWS console, your bucked should now have a `partitioned` folde
 
 Note that this project has been developed and tested on Python 3.9.
 
+### Optional: dbt
+
+If you want to see how this architecture can bridge the gap between offline pipelines preparing artifacts, and real-time querying for BI (or other use cases), we recommend you running the [dbt DAG](https://docs.getdbt.com/terms/dag) we prepared to simulate:
+
+* running some SQL transformations over the original dataset;
+* dump the results of the transformation (the equivalent of a dashboard view) in the data lake;
+* use our serverless query engine to power cheap and fast real-time visualization queries.
+
+To do that, you will need a dbt setup. To simplify the project, we included a version that works well with [duck-dbt](https://github.com/jwills/dbt-duckdb): however, if you have dbt on Snowflake, the same exact principles apply (as in, you can export from Snowflake your final artifact and then querying it with this lambda). 
+
+The quickest setup is running dbt locally, so you will need to set up a dbt [profile](https://docs.getdbt.com/docs/core/connection-profiles) named `duckdb-taxi` (see [here](https://github.com/jwills/dbt-duckdb) for examples), for example:
+
+```
+duckdb-taxi:
+  outputs:
+   dev:
+     type: duckdb     
+     path: ':memory:'
+     extensions:
+        - httpfs
+        - parquet
+     settings:
+        s3_region: us-east-1
+        s3_access_key_id: YOUR_S3_USER
+        s3_secret_access_key: YOUR_S3_KEY
+  target: dev
+```
+
+Please note that the dbt project is by design extremely simple and unsophisticated: we care about the overall design pattern here, not so much about the specific modalities of how transformation happens.
+
 ## Running the project
 
 ### A serverless query engine
@@ -98,13 +128,27 @@ Since the amount of data that can be returned by a lambda is limited, the lambda
 
 but be mindful of the infrastructure constraints!
 
-### Building a serverless BI
+### Serverless BI architecture (Optional)
 
+While you can run *totally* use the dashboard we designed directly on the dataset file in S3, we orchestrate a slightly more complex and realistic scenarios:
 
+* a batch pipeline that produces a final artifact, from raw data;
+* a dashboard allowing interactive queries on this final table (leveraging our serverless design).
 
-To run the front-end (a dashboard with streamlit) cd into `streamlit` and run `streamlit run dashboard.py`. A page should open in the browser, displaying a chart: you can use the form to interact in real time with the dataset, through the serverless infrastructure we built.
+As mentioned above, we assume you have completed a dbt setup successfully. Now:
 
-VIDEO HERE
+* make sure the value of `S3_BUCKET` is available as env variable;
+* `cd` into `dashboard/dbt` and type `dbt run`. 
+
+At the end of the tiny DAG, you will end up with a new folder (and file) in the target bucket (note that we use the `external` strategies for duck-dbt to produce a the view, and different warehouses would need slightly different configurations here to achieve the same result). This file represents the materialized view we need to serve from our BI:
+
+![Dashboard artifact is materialized.](images/dashboard.png)
+
+[ NOTE: the sql files in `dbt/models/taxi' reference directly files in the bucket, so any changes you made to the setup script should be reflected here as well. ]
+
+Now that we have a materialized view produced by our pipeline, it is time to query it! To run the front-end (a dashboard built with streamlit) go into the `dashboard` folder and run `streamlit run dashboard.py`. A page should open in the browser, displaying a chart: you can use the form to interact in real time with the dataset, through the serverless infrastructure we built.
+
+LOOM HERE AS AN EXAMPLE
 
 ### From quack to quack-reduce
 

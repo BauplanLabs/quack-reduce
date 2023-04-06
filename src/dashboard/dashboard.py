@@ -19,7 +19,9 @@ from dotenv import load_dotenv
 load_dotenv('../.env')
 assert os.environ['S3_BUCKET'], "S3_BUCKET is not set"
 S3_BUCKET = os.environ['S3_BUCKET']
-PARQUET_FILE = 's3://{}/dataset/taxi_2019_04.parquet'.format(S3_BUCKET)
+# note: this is the same file we exported in the top_pickup_locations.sql query
+# as part of our data transformation pipeline
+PARQUET_FILE = 's3://{}/dashboard/my_view.parquet'.format(S3_BUCKET)
 
 # import querying functoin from the runner
 sys.path.insert(0,'..')
@@ -27,7 +29,7 @@ from quack import fetch_all
 # build up the dashboard
 st.markdown("# Trip Dashboard")
 st.write("This dashboard shows KPIs for our taxi business.")
-st.header("Trips by pickup location (map id)")
+st.header("Top pickup locations (map id) by number of trips")
 # hardcode the columns
 COLS = ['PICKUP_LOCATION_ID', 'TRIPS']
 
@@ -39,13 +41,11 @@ st.write("Total row count: {}".format(df['C'][0]))
 # get the interactive chart
 base_query = """
     SELECT 
-        pickup_location_id AS {}, 
-        COUNT(*) AS {} 
+        location_id AS {}, 
+        counts AS {} 
     FROM 
-        read_parquet(['{}']) 
-    GROUP BY 1
-    ORDER BY 2 DESC
-    """.format(COLS[0], COLS[1], PARQUET_FILE)
+        read_parquet(['{}'])
+    """.format(COLS[0], COLS[1], PARQUET_FILE).strip()
 top_k = st.text_input('# of pickup locations', '5')
 # add a limit to the query based on the user input
 final_query = "{} LIMIT {};".format(base_query, top_k).format(top_k)
@@ -58,7 +58,7 @@ if df is not None:
         x = COLS[0],
         y = COLS[1],
         data = df,
-        order=None)
+        order=df.sort_values(COLS[1],ascending = False)[COLS[0]])
     plt.xticks(rotation=70)
     plt.tight_layout()
     st.pyplot(fig)
