@@ -5,11 +5,15 @@ A playground for running duckdb as a stateless query engine over a data lake
 
 TBC
 
+This is the companion repo to this blog post LINK. Please refer to the post for more context on the project, some background information about the motivation and use cases behind the code.
+
 ## Setup
+
+This project is pretty self-contained and requires only introductory-level familiarity with cloud services and frameworks, and a bit of Python.
 
 ### Accounts
 
-Make sure to have:
+Make sure you have:
 
 * a working AWS account;
 * the [serverless framework](https://www.serverless.com/framework/) properly [installed and configured](https://www.serverless.com/framework/docs/getting-started) (while you can create the container on ECR manually and then the lambda from the console, the instruction below assumes you just use the CLI for the entire setup).
@@ -24,7 +28,7 @@ In the `src` folder, you should copy `local.env` to `.env` (do *not* commit it) 
 | S3_SECRET | str  | Secret key for AWS access                            | wJalr/bPxRfiCYEXAMPLEKEY  |
 | S3_BUCKET | str  | Bucket to host the data (must be unique) | my-duck-bucket-130dcqda0u |
 
-This variables will be used by the setup script and the runner to communicate with AWS (S3 and Lambdas). Make sure the user has the permissions to:
+These variables will be used by the setup script and the runner to communicate with AWS (S3 and Lambdas). Make sure the user has the permissions to:
 
 * create a bucket and upload files to it;
 * invoke the lambda that we create below.
@@ -38,13 +42,17 @@ The `src/serverless` folder is a self-contained lambda project that uses Python 
 * an `app.py` file, containing the actual code our lambda will execute;
 * a `serverless.yml` file, which ties all these things together in the infra-as-code fashion, and allows us to deploy and manage the function from the CLI.
 
-If you have the serverless CLI setup correctly, deploying the lambda is easy as `cd` into the `serverless` folder (if you're not there already), and run `serverless deploy` (the first time, deployment will take a while as it needs to create the image, ship it to AWS and create the lambda stack - note that this is a "one-off" thing).
+If you have the serverless CLI setup correctly, deploying the lambda is easy as `cd` into the `serverless` folder (if you're not there already), and run `serverless deploy`. The first time, deployment will take a while as it needs to create the image, ship it to AWS and create the lambda stack - note that this is _a "one-off" thing_: 
 
-Once the deployment is finished, you can check your AWS account to see the lambda (you can even test it from the console, as we do in this video LINK).
+![Confirmation in the terminal of the successful creation of our lambda.](images/serverless.png)
+
+Note that sometimes you may get a `403 Forbidden` error when building the docker: in our experience, this usually goes away with `aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws`.
+
+Once the deployment is finished, you can check your AWS account to see the lambda (you can even test it from the console, as we do in [this video](https://www.loom.com/share/97785a387af84924b830b9e0f35d8a1e)).
 
 ### Python environment
 
-Create a virtual environment:
+Create and activate a virtual environment, and install the few dependencies:
 
 ```
 python -m venv venv
@@ -57,6 +65,12 @@ Then `cd` into `src` and run a quick setup script: `python run_me_first.py`. Thi
 * it will create a bucket on s3 with the name;
 * it will download the NYC taxi dataset and upload it to the bucket, both as a unique file and as a hive-partitioned directory;
 * it will print out few stats and meta-data on the dataset.
+
+If you check your AWS console, your bucked should now have a `partitioned` folder with this structure:
+
+![Bucket partitioning after the upload.](images/s3.png)
+
+Note that this project has been developed and tested on Python 3.9.
 
 ## Running the project
 
@@ -84,7 +98,7 @@ Since the amount of data that can be returned by a lambda is limited, the lambda
 
 but be mindful of the infrastructure constraints!
 
-### Building serverless BI
+### Building a serverless BI
 
 TBC
 

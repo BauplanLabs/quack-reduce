@@ -9,6 +9,11 @@ provider:
     images:
       quackimageblog:
         path: ./
+        platform: linux/amd64
+  environment:
+    S3_USER: ${env:S3_USER}
+    S3_ACCESS: ${env:S3_ACCESS}
+    HOME: /tmp
 
 functions:
   duckdb:

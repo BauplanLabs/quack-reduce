@@ -49,8 +49,10 @@ def handler(event, context):
         print("No query provided, will return empty results")
     else:
         # execute the query and return a pandas dataframe
-        # take the limit, to avoid crashing the lambdas by returning too many results
-        _df = con.execute(event_query).df().iloc[:limit]
+        _df = con.execute(event_query).df()
+        # take rows up the limit, to avoid crashing the lambda
+        # by returning too many results
+        _df = _df.head(limit)
         results = convert_records_to_json(_df)
     
     # return response to the client with metadata
@@ -59,7 +61,7 @@ def handler(event, context):
 
 def convert_records_to_json(_df):
     if len(_df) > 0:
-        # convert every timestamp to string to avoid serialization issues
+        # convert timestamp to string to avoid serialization issues
         cols = [col for col in _df.columns if _df[col].dtype == 'datetime64[ns]']
         _df = _df.astype({_: str for _ in cols})
 
