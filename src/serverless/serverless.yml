@@ -3,13 +3,14 @@ useDotenv: true
 
 provider:
   name: aws
+  architecture: arm64
   memorySize: 3008
   timeout: 600
   ecr:
     images:
       quackimageblog:
         path: ./
-        platform: linux/amd64
+        platform: linux/arm64
   environment:
     S3_USER: ${env:S3_USER}
     S3_ACCESS: ${env:S3_ACCESS}

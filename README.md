@@ -112,11 +112,11 @@ Make sure the setup is completed, you are in the right Python environment and in
 
 (with no arguments). When no arguments are provided, the script will run a simple count query on the file and print out the results.
 
-If all looks good, you can now run arbitrary queries, e.g.
+If all looks good, you can now run arbitrary queries, e.g. (replacing `MY_BUCKET` with your value):
 
-`python quack.py -q ...`
+`python quack.py -q "SELECT  pickup_location_id AS location_id, COUNT(*) AS counts  FROM read_parquet(['s3://MY_BUCKET/dataset/taxi_2019_04.parquet']) WHERE pickup_at >= '2019-04-01' AND  pickup_at < '2019-04-03' GROUP BY 1 ORDER BY 2 DESC"`
 
-to get BLAH BLAH, or 
+to get the most popular pickup location (IDs) for the first few days of April, or 
 
 `python quack.py -q ...`
 
@@ -152,10 +152,34 @@ Now that we have a materialized view produced by our pipeline, it is time to que
 
 You can use the form to interact in real time with the dataset (video [here](https://www.loom.com/share/9d5de3ba822a445d9d117225c1b0307f)), through the serverless infrastructure we built.
 
-### From quack to quack-reduce
+### From quack to quack-reduce (Optional)
 
-TBC
+As we mention in the blog post (LINK HERE AGAIN), an intriguing possibility of this design (going a bit more abstract compared to the immediate use cases above) is that the staless execution of SQL over an object storage (and therefore, using duckdb not really as a db, but basically as "just" a query engine) coupled with the parallel nature of AWS lambdas opens up interesting optimization possibilities.
+
+In particular, we could rephrase (some) SQL queries through a map-reduce programming pattern *with other SQL queries*, and execute them all at the same time. To consider a trivial example, a query such as:
+
+`SELECT COUNT(*) FROM myTable WHERE DATE BETWEEN 04/01/2022 AND 04/05/2022`
+
+can be rewritten as the SUM of the results of these smaller queries:
+
+`SELECT COUNT(*) FROM myTable WHERE DATE BETWEEN 04/01/2022 AND 04/02/2022` +
+`SELECT COUNT(*) FROM myTable WHERE DATE BETWEEN 04/02/2022 AND 04/03/2022` +
+...
+
+As the number of files increases (as in a typical hive-partitioned data lake), scanning the object storage (in duckdb syntax `parquet_scan('folder/', HIVE_PARTITIONING=1)`) may take much longer than reading single _k_ files directly through ideally _k_ parallel functions, drastically improving query performances.
+
+To test out this hypothesis, we built a tiny script that compares the same engine across different deployment patterns - local, remote etc. You can run the bechmarks with default values with `python benchmark.py`. The script is minimal and not very configurable, but should be enough to give you a feeling of how the different setups perform compared to each other, and the trade-offs involved (check the code for how it's built, but don't expect much!). 
+
+A typical run (ADD VIDEO LINK HERE WITH LOOM) will result in something like the following table (numbers will vary, but the layout should be the same):
+
+![Table benchmarking different architectures.](images/benchmarks.png)
+
+Please refer to the blogpost for more musings on this opportunity (and the non-trivial associated challenges).
+
+NOTE: if you have never raised your concurrency limits on AWS lambda, you may need to request through the console for an increase in parallel execution, otherwise AWS will not allowed the scaling out of the function.
 
 ## License
 
-All the code is released without warranty, "as is" under a MIT License. This was a fun week-end project and should be treated with the appropriate sense of humour.
+All the code is released without warranty, "as is" under a MIT License. 
+
+This started a fun week-end project and should be treated with the appropriate sense of humour.
