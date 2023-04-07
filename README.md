@@ -114,9 +114,9 @@ Make sure the setup is completed, you are in the right Python environment and in
 
 If all looks good, you can now run arbitrary queries, e.g. (replacing `MY_BUCKET` with your value):
 
-`python quack.py -q "SELECT  pickup_location_id AS location_id, COUNT(*) AS counts  FROM read_parquet(['s3://MY_BUCKET/dataset/taxi_2019_04.parquet']) WHERE pickup_at >= '2019-04-01' AND  pickup_at < '2019-04-02' GROUP BY 1"`
+`python quack.py -q "SELECT  pickup_location_id AS location_id, COUNT(*) AS counts  FROM read_parquet(['s3://MY_BUCKET/dataset/taxi_2019_04.parquet']) WHERE pickup_at >= '2019-04-01' AND  pickup_at < '2019-04-03' GROUP BY 1 ORDER BY 2 DESC"`
 
-to get BLAH BLAH, or 
+to get the most popular pickup location (IDs) for the first few days of April, or 
 
 `python quack.py -q ...`
 
@@ -168,14 +168,18 @@ can be rewritten as the SUM of the results of these smaller queries:
 
 As the number of files increases (as in a typical hive-partitioned data lake), scanning the object storage (in duckdb syntax `parquet_scan('folder/', HIVE_PARTITIONING=1)`) may take much longer than reading single _k_ files directly through ideally _k_ parallel functions, drastically improving query performances.
 
-To test out this hypothesis, we built a tiny script that compares the same engine across different deployment patterns - local, remote etc. You can run the bechmarks with default values with `python benchmark.py`. The script is minimal and not very configurable, but should be enough to give you a feeling of how the different setups perform compared to each other, and the trade-offs involved. 
+To test out this hypothesis, we built a tiny script that compares the same engine across different deployment patterns - local, remote etc. You can run the bechmarks with default values with `python benchmark.py`. The script is minimal and not very configurable, but should be enough to give you a feeling of how the different setups perform compared to each other, and the trade-offs involved (check the code for how it's built, but don't expect much!). 
 
-A typical run will results in something like the following table:
+A typical run (ADD VIDEO LINK HERE WITH LOOM) will result in something like the following table (numbers will vary, but the layout should be the same):
 
-PIC OF TABLE IN TERMINAL
+![Table benchmarking different architectures.](images/benchmarks.png)
 
 Please refer to the blogpost for more musings on this opportunity (and the non-trivial associated challenges).
 
+NOTE: if you have never raised your concurrency limits on AWS lambda, you may need to request through the console for an increase in parallel execution, otherwise AWS will not allowed the scaling out of the function.
+
 ## License
 
-All the code is released without warranty, "as is" under a MIT License. This was a fun week-end project and should be treated with the appropriate sense of humour.
+All the code is released without warranty, "as is" under a MIT License. 
+
+This started a fun week-end project and should be treated with the appropriate sense of humour.

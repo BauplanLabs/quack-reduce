@@ -44,27 +44,9 @@ def run_benchmarks(
     # NOTE: as usual we re-use the same naming convention as in the setup script
     # and all the others
     partitioned_dataset_scan = 's3://{}/partitioned/*/*.parquet'.format(bucket)
-    # run the standard serverless version
-    repetition_times = []
-    print("\n====Running serverless duckdb")
-    for i in range(repetitions):
-        start_time = time.time()
-        results = run_serverless_lambda(
-            partitioned_dataset_scan=partitioned_dataset_scan,
-            days=days,
-            is_debug=is_debug
-        )
-        repetition_times.append(time.time() - start_time)
-
-    execution_times.append({
-        'type': 'serverless',
-        'mean': sum(repetition_times) / len(repetition_times),
-        'std': statistics.stdev(repetition_times),
-        'test location': results[test_location_id]
-    })
     # run the map reduce version
     repetition_times = []
-    print("\n====Running map reduce version")
+    print("\n====> Running map reduce version")
     for i in range(repetitions):
         start_time = time.time()
         map_reduce_results = run_map_reduce(
@@ -74,18 +56,39 @@ def run_benchmarks(
             is_debug=is_debug
         )
         repetition_times.append(time.time() - start_time)
+        time.sleep(3)
     
     execution_times.append({
         'type': 'map_reduce',
-        'mean': sum(repetition_times) / len(repetition_times),
-        'std': statistics.stdev(repetition_times),
+        'mean': round(sum(repetition_times) / len(repetition_times), 3),
+        'std': round(statistics.stdev(repetition_times), 3),
         'test location': map_reduce_results[test_location_id]
+    })
+    # run the standard serverless version
+    repetition_times = []
+    print("\n====> Running serverless duckdb")
+    for i in range(repetitions):
+        start_time = time.time()
+        results = run_serverless_lambda(
+            partitioned_dataset_scan=partitioned_dataset_scan,
+            days=days,
+            is_debug=is_debug
+        )
+        repetition_times.append(time.time() - start_time)
+        time.sleep(3)
+
+    execution_times.append({
+        'type': 'serverless',
+        'mean': round(sum(repetition_times) / len(repetition_times), 3),
+        'std': round(statistics.stdev(repetition_times), 3),
+        'test location': results[test_location_id]
     })
     # run a local db querying the data lake
     repetition_times = []
-    print("\n====Running local duckdb")
+    print("\n====> Running local duckdb")
     for i in range(repetitions):
         start_time = time.time()
+        # just re-use the code inside the lambda without thinking too much ;-)
         con = duckdb.connect(database=':memory:')
         con.execute("""
             INSTALL httpfs;
@@ -101,12 +104,13 @@ def run_benchmarks(
             is_debug=is_debug
         )
         del con
-        execution_times.append(time.time() - start_time)
+        repetition_times.append(time.time() - start_time)
+        time.sleep(3)
     
     execution_times.append({
         'type': 'local',
-        'mean': sum(repetition_times) / len(repetition_times),
-        'std': statistics.stdev(repetition_times),
+        'mean': round(sum(repetition_times) / len(repetition_times), 3),
+        'std': round(statistics.stdev(repetition_times), 3),
         'test location': local_results[test_location_id]
     })
     # make sure the results are the same
@@ -237,26 +241,29 @@ def prepare_map_queries(
     return queries
 
 if __name__ == "__main__":
+    # make sure the envs are set
     assert os.environ['S3_BUCKET'], "Please set the S3_BUCKET environment variable"
+    assert os.environ['S3_USER'], "Please set the S3_USER environment variable"
+    assert os.environ['S3_ACCESS'], "Please set the S3_ACCESS environment variable"
     # get args from command line
     import argparse
-    # declare basic arguments
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-n",
         type=int,
         help="number of repetitions", 
-        default=5)
+        default=3)
+    # note: without reserved concurrency, too much concurrency will cause errors
     parser.add_argument(
         "-t",
         type=int,
         help="concurrent queries for map reduce", 
-        default=10)
+        default=20)
     parser.add_argument(
         "-d",
         type=int,
-        help="number of days to query", 
-        default=25)
+        help="number of days in April to query", 
+        default=20)
     parser.add_argument(
         "--debug", 
         action="store_true",
