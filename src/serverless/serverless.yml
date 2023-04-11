@@ -16,9 +16,28 @@ provider:
     S3_ACCESS: ${env:S3_ACCESS}
     HOME: /tmp
 
+#custom:
+#  dotenv:
+#    path: ../.env
+#    include:
+#      - S3_USER
+#      - S3_ACCESS
+#      - S3_BUCKET_NAME
+
+
 functions:
   duckdb:
     ephemeralStorageSize: 3008
     image:
       name: quackimageblog
 
+resources:
+  Resources:
+    S3Bucket:
+      Type: AWS::S3::Bucket
+      DeletionPolicy: Retain
+      Properties:
+        BucketName: ${env:S3_BUCKET_NAME}
+
+#plugins:
+#  - serverless-dotenv-plugin

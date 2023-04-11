@@ -41,21 +41,21 @@ def download_taxi_data():
     return file_name
 
 
-def create_bucket_if_not_exists(s3_client, bucket_name: str):
-    """
-    Create an S3 bucket if it does not exist. Return True if a bucket was created.
-    """
-    from botocore.client import ClientError
-
-    try:
-        response = s3_client.head_bucket(Bucket=bucket_name)
-    except ClientError:
-        print("The bucket {} does not exist, creating it now".format(bucket_name))
-        bucket = s3_client.create_bucket(Bucket=bucket_name)
-
-        return True
-    
-    return False
+# def create_bucket_if_not_exists(s3_client, bucket_name: str):
+#     """
+#     Create an S3 bucket if it does not exist. Return True if a bucket was created.
+#     """
+#     from botocore.client import ClientError
+#
+#     try:
+#         response = s3_client.head_bucket(Bucket=bucket_name)
+#     except ClientError:
+#         print("The bucket {} does not exist, creating it now".format(bucket_name))
+#         bucket = s3_client.create_bucket(Bucket=bucket_name)
+#
+#         return True
+#
+#     return False
 
 
 def upload_file_to_bucket(s3_client, file_name, bucket, object_name=None):
@@ -126,7 +126,7 @@ def setup_project():
          aws_access_key_id=os.environ['S3_USER'],
          aws_secret_access_key=os.environ['S3_ACCESS']
          )
-    is_created = create_bucket_if_not_exists(s3_client, os.environ['S3_BUCKET'])
+    # is_created = create_bucket_if_not_exists(s3_client, os.environ['S3_BUCKET'])
     # upload the data to the bucket
     upload_datasets(
         s3_client,
