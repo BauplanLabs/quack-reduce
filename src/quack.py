@@ -25,12 +25,7 @@ load_dotenv()
 # we don't allow to display more than 10 rows in the terminal
 MAX_ROWS_IN_TERMINAL = 10
 # instantiate the boto3 client to communicate with the lambda
-lambda_client = boto3.client(
-   'lambda', 
-   aws_access_key_id=os.environ['S3_USER'],
-   aws_secret_access_key=os.environ['S3_ACCESS'],
-   region_name='us-east-1'
-   )
+lambda_client = boto3.client('lambda')
 
 
 def invoke_lambda(json_payload_as_str: str):
@@ -182,7 +177,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     # run the main function
     runner(
-        bucket=os.environ['S3_BUCKET'],
+        bucket=os.environ['S3_BUCKET_NAME'],
         query=args.q,
         limit=args.limit,
         is_debug=args.debug

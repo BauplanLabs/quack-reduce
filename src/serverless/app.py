@@ -15,12 +15,10 @@ def return_duckdb_connection():
     """
     duckdb_connection = duckdb.connect(database=':memory:')
     duckdb_connection.execute("""
-        INSTALL httpfs;
         LOAD httpfs;
-        SET s3_region='us-east-1';
-        SET s3_access_key_id='{}';
-        SET s3_secret_access_key='{}';
-    """.format(os.environ['S3_USER'], os.environ['S3_ACCESS'])
+        SET s3_region='{}';
+        SET s3_session_token='{}';
+    """.format(os.environ['AWS_REGION'], os.environ['AWS_SESSION_TOKEN'])
     )
 
     return duckdb_connection

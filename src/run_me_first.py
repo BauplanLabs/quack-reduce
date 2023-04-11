@@ -8,7 +8,10 @@ Check the README.md file for more details and for the prerequisites.
 
 
 import os
+
 import boto3
+import requests
+import pandas as pd
 from dotenv import load_dotenv
 
 
@@ -20,8 +23,6 @@ def donwload_data(url: str, target_file: str):
     """
     Download a file from a url and save it to a target file
     """
-    import requests
-
     r = requests.get(url)
     open(target_file, 'wb').write(r.content)
 
@@ -33,29 +34,13 @@ def download_taxi_data():
     Download the taxi data from the duckdb repo - if the file disappears, 
     you can of course replace it with any other version of the same dataset.
     """
-
+    print('Downloading the taxi dataset')
+    
     url = 'https://github.com/cwida/duckdb-data/releases/download/v1.0/taxi_2019_04.parquet'
     file_name = 'data/taxi_2019_04.parquet'
     donwload_data(url, file_name)
 
     return file_name
-
-
-# def create_bucket_if_not_exists(s3_client, bucket_name: str):
-#     """
-#     Create an S3 bucket if it does not exist. Return True if a bucket was created.
-#     """
-#     from botocore.client import ClientError
-#
-#     try:
-#         response = s3_client.head_bucket(Bucket=bucket_name)
-#     except ClientError:
-#         print("The bucket {} does not exist, creating it now".format(bucket_name))
-#         bucket = s3_client.create_bucket(Bucket=bucket_name)
-#
-#         return True
-#
-#     return False
 
 
 def upload_file_to_bucket(s3_client, file_name, bucket, object_name=None):
@@ -65,6 +50,7 @@ def upload_file_to_bucket(s3_client, file_name, bucket, object_name=None):
     from botocore.exceptions import ClientError
     
     try:
+        print('Uploading {}'.format(object_name))
         response = s3_client.upload_file(file_name, bucket, object_name)
     except ClientError as e:
         print("Error uploading file {} to bucket {} with error {}".format(file_name, bucket, e))
@@ -104,7 +90,6 @@ def upload_partioned_dataset(
     on our s3 bucket. The final directory will have a subdirectory for each
     value of the partition column, and each subdirectory will contain parquet files.
     """
-    import pandas as pd
 
     df = pd.read_parquet(taxi_dataset_path)
     df[partition_col] = pd.to_datetime(df['pickup_at']).dt.date
@@ -117,20 +102,19 @@ def upload_partioned_dataset(
 
 def setup_project():
     # check vars are ok
-    assert os.environ['S3_BUCKET'], "You need to set the S3_BUCKET environment variable"
+    assert 'S3_BUCKET_NAME' in os.environ, "You need to set the S3_BUCKET_NAME environment variable"
+    AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
+    AWS_PROFILE = os.environ.get('AWS_PROFILE')
+    assert (AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY) or AWS_PROFILE, "You need to set AWS_ACCESS_KEY_ID & AWS_SECRET_ACCESS_KEY or the AWS_PROFILE environment variable"
+    
     # first download the data
     taxi_dataset_path = download_taxi_data()
-    # create the bucket if it does not exist
-    s3_client = boto3.client(
-         's3',
-         aws_access_key_id=os.environ['S3_USER'],
-         aws_secret_access_key=os.environ['S3_ACCESS']
-         )
-    # is_created = create_bucket_if_not_exists(s3_client, os.environ['S3_BUCKET'])
     # upload the data to the bucket
+    s3_client = boto3.client('s3')
     upload_datasets(
         s3_client,
-        os.environ['S3_BUCKET'],
+        os.environ['S3_BUCKET_NAME'],
         taxi_dataset_path
         )
     # all done

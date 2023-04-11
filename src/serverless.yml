@@ -3,33 +3,33 @@ useDotenv: true
 
 provider:
   name: aws
+  region: ${env:AWS_DEFAULT_REGION, 'us-east-1'}
   architecture: arm64
   memorySize: 3008
   timeout: 600
   ecr:
     images:
       quackimageblog:
-        path: ./
+        path: ./serverless
         platform: linux/arm64
-  environment:
-    S3_USER: ${env:S3_USER}
-    S3_ACCESS: ${env:S3_ACCESS}
-    HOME: /tmp
-
-#custom:
-#  dotenv:
-#    path: ../.env
-#    include:
-#      - S3_USER
-#      - S3_ACCESS
-#      - S3_BUCKET_NAME
-
 
 functions:
   duckdb:
     ephemeralStorageSize: 3008
     image:
       name: quackimageblog
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - s3:GetObject
+          - s3:PutObject
+        Resource:
+          - Fn::Join:
+            - ''
+            - - Fn::GetAtt:
+                - S3Bucket
+                - Arn
+              - '/*'
 
 resources:
   Resources:
@@ -39,5 +39,5 @@ resources:
       Properties:
         BucketName: ${env:S3_BUCKET_NAME}
 
-#plugins:
-#  - serverless-dotenv-plugin
+plugins:
+  - serverless-iam-roles-per-function
