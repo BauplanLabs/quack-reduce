@@ -17,11 +17,11 @@ from dotenv import load_dotenv
 
 # get the environment variables from the .env file
 load_dotenv('../.env')
-assert os.environ['S3_BUCKET'], "S3_BUCKET is not set"
-S3_BUCKET = os.environ['S3_BUCKET']
+assert 'S3_BUCKET_NAME' in os.environ, "Please set the S3_BUCKET_NAME environment variable"
+S3_BUCKET_NAME = os.environ['S3_BUCKET_NAME']
 # note: this is the same file we exported in the top_pickup_locations.sql query
 # as part of our data transformation pipeline
-PARQUET_FILE = 's3://{}/dashboard/my_view.parquet'.format(S3_BUCKET)
+PARQUET_FILE = f"s3://{S3_BUCKET_NAME}/dashboard/my_view.parquet"
 
 # import querying functoin from the runner
 sys.path.insert(0,'..')
@@ -34,18 +34,18 @@ st.header("Top pickup locations (map id) by number of trips")
 COLS = ['PICKUP_LOCATION_ID', 'TRIPS']
 
 # get the total row count
-query = "SELECT COUNT(*) AS C FROM read_parquet(['{}'])".format(PARQUET_FILE)
+query = f"SELECT COUNT(*) AS C FROM read_parquet(['{PARQUET_FILE}'])"
 df, metadata = fetch_all(query, limit=1, display=False, is_debug=False)
-st.write("Total row count: {}".format(df['C'][0]))
+st.write(f"Total row count: {df['C'][0]}")
 
 # get the interactive chart
-base_query = """
+base_query = f"""
     SELECT 
-        location_id AS {}, 
-        counts AS {} 
+        location_id AS {COLS[0]}, 
+        counts AS {COLS[1]} 
     FROM 
-        read_parquet(['{}'])
-    """.format(COLS[0], COLS[1], PARQUET_FILE).strip()
+        read_parquet(['{PARQUET_FILE}'])
+    """.strip()
 top_k = st.text_input('# of pickup locations', '5')
 # add a limit to the query based on the user input
 final_query = "{} LIMIT {};".format(base_query, top_k).format(top_k)
@@ -66,7 +66,7 @@ else:
     st.write("Sorry, something went wrong :-(")
 
 # display metadata
-st.write("Roundtrip ms: {}".format(metadata['roundtrip_time']))
-st.write("Query exec. time ms: {}".format(metadata['timeMs']))
-st.write("Lambda is warm: {}".format(metadata['warm']))
+st.write(f"Roundtrip ms: {metadata['roundtrip_time']}")
+st.write(f"Query exec. time ms: {metadata['timeMs']}")
+st.write(f"Lambda is warm: {metadata['warm']}")
         

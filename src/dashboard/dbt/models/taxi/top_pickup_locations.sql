@@ -1,4 +1,4 @@
-{{ config(materialized='external', location="s3://{{ env_var('S3_BUCKET') }}/dashboard/my_view.parquet") }}
+{{ config(materialized='external', location="s3://{{ env_var('S3_BUCKET_NAME') }}/dashboard/my_view.parquet") }}
 
 SELECT 
     location_id,

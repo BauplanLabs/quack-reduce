@@ -14,11 +14,11 @@ def return_duckdb_connection():
     Return a duckdb connection object
     """
     duckdb_connection = duckdb.connect(database=':memory:')
-    duckdb_connection.execute("""
+    duckdb_connection.execute(f"""
         LOAD httpfs;
-        SET s3_region='{}';
-        SET s3_session_token='{}';
-    """.format(os.environ['AWS_REGION'], os.environ['AWS_SESSION_TOKEN'])
+        SET s3_region='{os.environ['AWS_REGION']}';
+        SET s3_session_token='{os.environ['AWS_SESSION_TOKEN']}';
+    """
     )
 
     return duckdb_connection

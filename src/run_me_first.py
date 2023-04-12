@@ -50,10 +50,10 @@ def upload_file_to_bucket(s3_client, file_name, bucket, object_name=None):
     from botocore.exceptions import ClientError
     
     try:
-        print('Uploading {}'.format(object_name))
+        print(f"Uploading {object_name}")
         response = s3_client.upload_file(file_name, bucket, object_name)
     except ClientError as e:
-        print("Error uploading file {} to bucket {} with error {}".format(file_name, bucket, e))
+        print(f"Error uploading file {file_name} to bucket {bucket} with error {e}")
         return False
     
     return True
@@ -70,7 +70,7 @@ def upload_datasets(s3_client, bucket: str, taxi_dataset_path: str):
         s3_client, 
         taxi_dataset_path,
         bucket,
-        object_name='dataset/{}'.format(file_name)
+        object_name=f"dataset/{file_name}"
     )
     is_uploaded = upload_partioned_dataset(
         bucket, 
@@ -94,7 +94,7 @@ def upload_partioned_dataset(
     df = pd.read_parquet(taxi_dataset_path)
     df[partition_col] = pd.to_datetime(df['pickup_at']).dt.date
     target_folder = os.path.join('s3://', bucket, 'partitioned')
-    print("Saving data with hive partitioning ({}) in {}".format(partition_col, target_folder))
+    print(f"Saving data with hive partitioning ({partition_col}) in {target_folder}")
     df.to_parquet(target_folder, partition_cols=[partition_col])
     
     return True
@@ -102,11 +102,11 @@ def upload_partioned_dataset(
 
 def setup_project():
     # check vars are ok
-    assert 'S3_BUCKET_NAME' in os.environ, "You need to set the S3_BUCKET_NAME environment variable"
+    assert 'S3_BUCKET_NAME' in os.environ, "Please set the S3_BUCKET_NAME environment variable"
     AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
     AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
     AWS_PROFILE = os.environ.get('AWS_PROFILE')
-    assert (AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY) or AWS_PROFILE, "You need to set AWS_ACCESS_KEY_ID & AWS_SECRET_ACCESS_KEY or the AWS_PROFILE environment variable"
+    assert (AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY) or AWS_PROFILE, "Please set the AWS_ACCESS_KEY_ID & AWS_SECRET_ACCESS_KEY (or the AWS_PROFILE) environment variables"
     
     # first download the data
     taxi_dataset_path = download_taxi_data()

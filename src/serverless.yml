@@ -30,6 +30,13 @@ functions:
                 - S3Bucket
                 - Arn
               - '/*'
+      - Effect: Allow
+        Action:
+          - s3:ListBucket
+        Resource:
+          - Fn::GetAtt:
+            - S3Bucket
+            - Arn
 
 resources:
   Resources:
