@@ -14,13 +14,11 @@ def return_duckdb_connection():
     Return a duckdb connection object
     """
     duckdb_connection = duckdb.connect(database=':memory:')
-    duckdb_connection.execute("""
-        INSTALL httpfs;
+    duckdb_connection.execute(f"""
         LOAD httpfs;
-        SET s3_region='us-east-1';
-        SET s3_access_key_id='{}';
-        SET s3_secret_access_key='{}';
-    """.format(os.environ['S3_USER'], os.environ['S3_ACCESS'])
+        SET s3_region='{os.environ['AWS_REGION']}';
+        SET s3_session_token='{os.environ['AWS_SESSION_TOKEN']}';
+    """
     )
 
     return duckdb_connection
@@ -30,6 +28,7 @@ def handler(event, context):
     """
     Run a SQL query in a memory db as a serverless function
     """
+
     is_warm = False
     # run a timer for info
     start = time.time()

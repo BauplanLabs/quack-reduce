@@ -131,5 +131,8 @@ dmypy.json
 *.parquet
 
 .serverless/
+node_modules/
 
 .DS_Store
+.node-version
+.python-version

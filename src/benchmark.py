@@ -43,7 +43,7 @@ def run_benchmarks(
     execution_times = []
     # NOTE: as usual we re-use the same naming convention as in the setup script
     # and all the others
-    partitioned_dataset_scan = 's3://{}/partitioned/*/*.parquet'.format(bucket)
+    partitioned_dataset_scan = f"s3://{bucket}/partitioned/*/*.parquet"
     # run the map reduce version
     repetition_times = []
     print("\n====> Running map reduce version")
@@ -90,13 +90,13 @@ def run_benchmarks(
         start_time = time.time()
         # just re-use the code inside the lambda without thinking too much ;-)
         con = duckdb.connect(database=':memory:')
-        con.execute("""
+        con.execute(f"""
             INSTALL httpfs;
             LOAD httpfs;
-            SET s3_region='us-east-1';
-            SET s3_access_key_id='{}';
-            SET s3_secret_access_key='{}';
-        """.format(os.environ['S3_USER'], os.environ['S3_ACCESS']))
+            SET s3_region='{os.environ.get('AWS_DEFAULT_REGION', 'us-east-1')}';
+            SET s3_access_key_id='{os.environ['AWS_ACCESS_KEY_ID']}';
+            SET s3_secret_access_key='{os.environ['AWS_SECRET_ACCESS_KEY']}';
+        """)
         local_results = run_local_db(
             con=con,
             partitioned_dataset_scan=partitioned_dataset_scan,
@@ -235,16 +235,16 @@ def prepare_map_queries(
     for i in range(1, days + 1):
         start_day_as_str = "{:02d}".format(i)
         end_day_as_str = "{:02d}".format(i + 1)
-        parquet_scan = 's3://{}/partitioned/date=2019-04-{}/*.parquet'.format(bucket, start_day_as_str)
+        parquet_scan = f"s3://{bucket}/partitioned/date=2019-04-{start_day_as_str}/*.parquet"
         queries.append(query.format(parquet_scan, start_day_as_str, end_day_as_str))
     
     return queries
 
 if __name__ == "__main__":
     # make sure the envs are set
-    assert os.environ['S3_BUCKET'], "Please set the S3_BUCKET environment variable"
-    assert os.environ['S3_USER'], "Please set the S3_USER environment variable"
-    assert os.environ['S3_ACCESS'], "Please set the S3_ACCESS environment variable"
+    assert 'S3_BUCKET_NAME' in os.environ, "Please set the S3_BUCKET_NAME environment variable"
+    assert 'AWS_ACCESS_KEY_ID' in os.environ, "Please set the AWS_ACCESS_KEY_ID environment variable"
+    assert 'AWS_SECRET_ACCESS_KEY' in os.environ, "Please set the AWS_SECRET_ACCESS_KEY environment variable"
     # get args from command line
     import argparse
     parser = argparse.ArgumentParser()
@@ -272,7 +272,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     # run the main function
     run_benchmarks(
-        bucket=os.environ['S3_BUCKET'],
+        bucket=os.environ['S3_BUCKET_NAME'],
         repetitions=args.n,
         threads=args.t,
         days=args.d,

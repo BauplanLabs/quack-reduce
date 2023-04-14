@@ -25,12 +25,7 @@ load_dotenv()
 # we don't allow to display more than 10 rows in the terminal
 MAX_ROWS_IN_TERMINAL = 10
 # instantiate the boto3 client to communicate with the lambda
-lambda_client = boto3.client(
-   'lambda', 
-   aws_access_key_id=os.environ['S3_USER'],
-   aws_secret_access_key=os.environ['S3_ACCESS'],
-   region_name='us-east-1'
-   )
+lambda_client = boto3.client('lambda')
 
 
 def invoke_lambda(json_payload_as_str: str):
@@ -61,19 +56,19 @@ def fetch_all(
     Get results from lambda and display them
     """
     if is_debug:
-        print("Running query: {}, with limit: {}".format(query, limit))
+        print(f"Running query: {query}, with limit: {limit}")
     # run the query
     start_time = time.time()
     response = invoke_lambda(json.dumps({'q': query, 'limit': limit}))
     roundtrip_time =  int((time.time() - start_time) * 1000.0)
     # check for errors first
     if 'errorMessage' in response:
-        print("Error: {}".format(response['errorMessage']))
+        print(f"Error: {response['errorMessage']}")
         # just raise an exception now as we don't have a proper error handling
         raise Exception(response['errorMessage'])
     # no error returned, display the results
     if is_debug:
-        print("Debug reponse: {}".format(response))
+        print(f"Debug reponse: {response}")
 
     rows = response['data']['records']
     # add the roundtrip time to the metadata
@@ -148,8 +143,8 @@ def runner(
     if query is None:
         # NOTE: the file path, after the bucket, should be the same as the one we have
         # in the run_me_first.py script. If you changed it there, you should change it here
-        target_file = 's3://{}/dataset/taxi_2019_04.parquet'.format(bucket)
-        query = "SELECT COUNT(*) AS COUNTS FROM read_parquet(['{}'])".format(target_file)
+        target_file = f"s3://{bucket}/dataset/taxi_2019_04.parquet"
+        query = f"SELECT COUNT(*) AS COUNTS FROM read_parquet(['{target_file}'])"
         # since this is a test query, we force debug to be True
         rows, metadata = fetch_all(query, limit, display=True, is_debug=True)
     else:
@@ -160,6 +155,7 @@ def runner(
 
 
 if __name__ == "__main__":
+    assert 'S3_BUCKET_NAME' in os.environ, "Please set the S3_BUCKET_NAME environment variable"
     # get args from command line
     import argparse
     # declare basic arguments
@@ -182,7 +178,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     # run the main function
     runner(
-        bucket=os.environ['S3_BUCKET'],
+        bucket=os.environ['S3_BUCKET_NAME'],
         query=args.q,
         limit=args.limit,
         is_debug=args.debug

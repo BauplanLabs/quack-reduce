@@ -1,0 +1,50 @@
+service: quack-reduce-lambda
+useDotenv: true
+
+provider:
+  name: aws
+  region: ${env:AWS_DEFAULT_REGION, 'us-east-1'}
+  architecture: arm64
+  memorySize: 3008
+  timeout: 600
+  ecr:
+    images:
+      quackimageblog:
+        path: ./serverless
+        platform: linux/arm64
+
+functions:
+  duckdb:
+    ephemeralStorageSize: 3008
+    image:
+      name: quackimageblog
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - s3:GetObject
+          - s3:PutObject
+        Resource:
+          - Fn::Join:
+            - ''
+            - - Fn::GetAtt:
+                - S3Bucket
+                - Arn
+              - '/*'
+      - Effect: Allow
+        Action:
+          - s3:ListBucket
+        Resource:
+          - Fn::GetAtt:
+            - S3Bucket
+            - Arn
+
+resources:
+  Resources:
+    S3Bucket:
+      Type: AWS::S3::Bucket
+      DeletionPolicy: Retain
+      Properties:
+        BucketName: ${env:S3_BUCKET_NAME}
+
+plugins:
+  - serverless-iam-roles-per-function
