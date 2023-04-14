@@ -28,6 +28,7 @@ def handler(event, context):
     """
     Run a SQL query in a memory db as a serverless function
     """
+
     is_warm = False
     # run a timer for info
     start = time.time()

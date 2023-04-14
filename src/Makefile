@@ -8,7 +8,6 @@ serverless-deploy:
 	npx serverless deploy
 .PHONY: serverless-deploy
 
-
 python-init:
 	python3 -m venv ./.venv && source ./.venv/bin/activate && pip install -r requirements.txt
 .PHONY: python-init
@@ -32,6 +31,11 @@ benchmark:
 dbt-run:
 	source ./.venv/bin/activate && cd dashboard/dbt && S3_BUCKET_NAME=${S3_BUCKET_NAME} dbt run
 .PHONY: dbt-run
+
+dbt-docs:
+	source ./.venv/bin/activate && cd dashboard/dbt && S3_BUCKET_NAME=${S3_BUCKET_NAME} dbt docs generate && dbt docs serve
+.PHONY: dbt-docs
+
 
 dashboard:
 	source ./.venv/bin/activate && cd dashboard && streamlit run dashboard.py

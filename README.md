@@ -9,7 +9,7 @@ This is the companion repo to this blog post LINK. Please refer to the post for 
 
 ## Setup
 
-This project is pretty self-contained and requires only introductory-level familiarity with cloud services and frameworks, and a bit of Python.
+This project is pretty self-contained and requires only introductory-level familiarity with cloud services and frameworks, a bit of Python and optionally a bit of dbt.
 
 ### Accounts
 
@@ -17,7 +17,7 @@ Make sure you have:
 
 * a working AWS account;
 * Python 3.x and Node.js properly installed on your machine (while you can create the container on ECR manually and then the lambda from the console, the instruction below assumes you just use the CLI for the entire setup).
-
+* (optional - if you want to run the analytics app) A profiles.yaml file on your local machine to run the dbt project.
 ### Global variables
 
 In the `src` folder, you should copy `local.env` to `.env` (do *not* commit it) and fill it with proper values:
@@ -87,6 +87,21 @@ duckdb-taxi:
      extensions:
         - httpfs
         - parquet
+  target: dev
+```
+
+Because the dbt project is run through a make file, there will be no need to add your AWS credentials to the `extensions` section of the `duckdb-taxi` profile. In case you wanted to set up your dbt project without using make, your dbt profile will look like this: 
+
+```yaml
+# ~/.dbt/profiles.yml
+duckdb-taxi:
+  outputs:
+   dev:
+     type: duckdb
+     path: ':memory:'
+     extensions:
+        - httpfs
+        - parquet
      settings:
         s3_region: us-east-1
         s3_access_key_id: YOUR_S3_USER
@@ -94,7 +109,8 @@ duckdb-taxi:
   target: dev
 ```
 
-Please note that the dbt project is by design extremely simple and unsophisticated: we care about the overall design pattern here, not so much about the specific modalities of how transformation happens.
+Please note that the dbt project is by design extremely simple: it's just a two-node DAG. We care about the overall design pattern here, not so much about the specific modalities of how transformation happens. We encourage you to add a more sophisticated dbt project.
+
 
 ## Running the project
 
@@ -110,11 +126,7 @@ If all looks good, you can now run arbitrary queries, e.g. (replacing `MY_BUCKET
 
 `python quack.py -q "SELECT pickup_location_id AS location_id, COUNT(*) AS counts FROM read_parquet(['s3://MY_BUCKET_NAME/dataset/taxi_2019_04.parquet']) WHERE pickup_at >= '2019-04-01' AND pickup_at < '2019-04-03' GROUP BY 1 ORDER BY 2 DESC"`
 
-to get the most popular pickup location (IDs) for the first few days of April, or
-
-`python quack.py -q ...`
-
-to get BLAH BLAH.
+to get the most popular pickup location (IDs) for the first few days of April. 
 
 Since the amount of data that can be returned by a lambda is limited, the lambda will automatically limit your rows if you don't specific a limit in the script. You can get more data back with:
 
