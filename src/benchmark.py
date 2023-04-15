@@ -4,12 +4,11 @@ This Python script benchmarks the performance of running queries using duckdb as
 an object storage as data source. 
 
 The script is minimal and not very configurable, but should be enough to give you a 
-feeling of how the different setups perform compared to each other,
-and the trade-offs involved.
+feeling of how the different setups perform and the trade-offs involved.
 
 Please note we basically start with 2019-04-01 and based on the -d flag we add days to the date.
 So by increasing -d you will increase the amount of data to be processed. The map reduce version
-is a manually unpacks the queries into queries-by-date and then runs them in parallel.
+manually unpacks the queries into queries-by-date and then runs them in parallel.
 
 Due to cold start, the first run of the serverless version may be slower than the others, so you should
 re-run the same script multiple times to get a better idea of the performance.
@@ -263,7 +262,7 @@ if __name__ == "__main__":
         "-d",
         type=int,
         help="number of days in April to query", 
-        default=20)
+        default=10)
     parser.add_argument(
         "--debug", 
         action="store_true",

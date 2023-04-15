@@ -2,7 +2,7 @@
 
 Python script to run a one-time setup for testing the serverless duckdb architecture.
 
-Check the README.md file for more details and for the prerequisites.
+Check the README.md for more details and for the prerequisites.
 
 """
 
@@ -21,7 +21,7 @@ load_dotenv()
 
 def donwload_data(url: str, target_file: str):
     """
-    Download a file from a url and save it to a target file
+    Download a file from a url and save it to a target file.
     """
     r = requests.get(url)
     open(target_file, 'wb').write(r.content)
@@ -45,7 +45,7 @@ def download_taxi_data():
 
 def upload_file_to_bucket(s3_client, file_name, bucket, object_name=None):
     """
-    Upload a file to an S3 bucket
+    Upload a file to an S3 bucket.
     """
     from botocore.exceptions import ClientError
     
@@ -62,7 +62,7 @@ def upload_file_to_bucket(s3_client, file_name, bucket, object_name=None):
 def upload_datasets(s3_client, bucket: str, taxi_dataset_path: str):
     """
     Upload the datasets to the bucket, first as one parquet file, then as
-    a directory of parquet files with hive partitioning
+    a directory of parquet files with hive partitioning.
     """
     file_name = os.path.basename(taxi_dataset_path)
     # upload file as is, a single parquet file in the data/ folder of the target bucket

@@ -36,7 +36,6 @@ dbt-docs:
 	source ./.venv/bin/activate && cd dashboard/dbt && S3_BUCKET_NAME=${S3_BUCKET_NAME} dbt docs generate && dbt docs serve
 .PHONY: dbt-docs
 
-
 dashboard:
 	source ./.venv/bin/activate && cd dashboard && streamlit run dashboard.py
 .PHONY: dashboard
