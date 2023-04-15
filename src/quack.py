@@ -5,7 +5,7 @@ can be passed through the command line, or the script can be run without paramet
 to check the status of the lambda (it will return the results from a pre-defined query).
 
 
-Check the README.md file for more details.
+Check the README.md for more details.
 
 """
 
@@ -106,8 +106,7 @@ def display_table(
         ):
     """
     We receive a list of rows, each row is a dict with the column names as keys.
-
-    We use rich (https://rich.readthedocs.io/en/stable/tables.html) to display a nice table in the terminal
+    We use rich (https://rich.readthedocs.io/en/stable/tables.html) to display a nice table in the terminal.
     """
     # build the table
     table = Table(title=title)
