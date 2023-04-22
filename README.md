@@ -1,20 +1,58 @@
-# quack-reduce
+# Quack-reduce
+A playground for running duckdb as a stateless query engine over a data lake. This is the companion repo to this blog post LINK. Please refer to the post for more context on the project, some background information about the motivation and use cases behind the code.
 
-A playground for running duckdb as a stateless query engine over a data lake.
+## Quick Start ..ε=(｡ﾉ･ω･)ﾉ 
 
-- [Overview](#overview)
-- [Setup](#setup)
-  - [Accounts](#accounts)
-  - [Global variables](#global-variables)
-  - [Duckdb lambda](#duckdb-lambda)
-  - [Python environment](#python-environment)
-- [A serverless query engine](#a-serverless-query-engine)
-- [Serverless BI architecture (Optional)](#serverless-bi-architecture-optional)
-  - [dbt](#dbt)
-  - [Dashboard](#dashboard)
-- [From quack to quack-reduce (Optional)](#from-quack-to-quack-reduce-optional)
-- [What's next?](#what-s-next)
-- [License](#license)
+### Setup your account
+
+Make sure you have:
+
+- A working AWS account;
+- [Docker](https://docs.docker.com/get-docker/) installed and running on your machine;
+- Python 3.9+ and Node.js properly installed on your machine (while you can create the container on ECR manually and then the lambda from the console, the instruction below assumes you just use the CLI for the entire setup).
+- A `profiles.yaml` file on your local machine to run the dbt project.
+
+In the `src` folder, you should copy `local.env` to `.env` (do *not* commit it) and fill it with proper values:
+
+| value                 | type | description                                          |                   example |
+|-----------------------|------|------------------------------------------------------|--------------------------:|
+| AWS_ACCESS_KEY_ID     | str  | User key for AWS access                              | AKIAIO...                 |
+| AWS_SECRET_ACCESS_KEY | str  | Secret key for AWS access                            | wJalr/...                 |
+| S3_BUCKET_NAME        | str  | Bucket to host the data (must be unique)             | my-duck-bucket-130dcqda0u |
+
+These variables will be used by the setup script and the runner to communicate with AWS (S3 and Lambdas). Make sure the user has the permissions to:
+
+- create a bucket and upload files to it;
+- invoke the lambda that we create below.
+### Run the project
+From the `src` folder:
+
+>**1. Create the DuckDB Lambda:** run `make nodejs-init` and then `make serverless deploy`
+
+>**2. Build the Python env:** run `make python-init`.
+
+>**3. Download the data and upload it to S3:** run `make run_me_first`.
+
+>**4. Test the serverless query engine:** run `make test`.
+
+>**5. Set up your dbt profile:** to run dbt locally, set up a dbt [profile](https://docs.getdbt.com/docs/core/connection-profiles) named `duckdb-taxi` (see [here](https://github.com/jwills/dbt-duckdb) for examples):
+```yaml
+# ~/.dbt/profiles.yml
+duckdb-taxi:
+  outputs:
+   dev:
+     type: duckdb
+     path: ':memory:'
+     extensions:
+        - httpfs
+        - parquet
+  target: dev
+```
+>**6. Run the dbt project:** run make `dbt-run`.
+
+>**7. Run the Analytics app:** run `make dashboard`.
+
+***
 
 ## Overview
 
