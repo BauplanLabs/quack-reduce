@@ -1,5 +1,8 @@
 # Quack-reduce
-A playground for running duckdb as a stateless query engine over a data lake. This is the companion repo to this blog post LINK. Please refer to the post for more context on the project, some background information about the motivation and use cases behind the code.
+A playground for running duckdb as a stateless query engine over a data lake. 
+The idea is to have a zero-maintenance, [very fast](https://www.loom.com/share/96f1fd938c814d0a825facb215546f03) and almost free data engine for small analytics apps. 
+This repo is the companion code for this blog post (_forthcoming_). 
+Please refer to the blog post for more background information and details on the use case.
 
 ## Quick Start ..ε=(｡ﾉ･ω･)ﾉ 
 
@@ -53,55 +56,22 @@ duckdb-taxi:
 
 >**7. Run the Analytics app:** run `make dashboard`.
 
+<img src="images/demo.gif" width="448">
+
+
 ***
 
-## Overview
-
-This repo is the companion code for this blog post (_forthcoming_), and it is a self-contained stack to run SQL queries over a data lake with minimal-to-no-infrastructure, and minimal-to-no latency. Since a diagram is worth a thousand words, this repo builds out infrastructure and code based on this pattern:
-
-![Architectural diagram](images/flow.png)
-
-i.e. a user sends analytic queries to a lambda, which dynamically runs them on the data lake in s3. Why would you care? 
-
-*TL;DR*: there are many advantages (and some disadvantages) from this design, but a trivial consequence is the ability to power visualizations which are basically free _and_ [very fast](https://www.loom.com/share/96f1fd938c814d0a825facb215546f03). 
-
-![Demo gif](images/demo.gif)
+## Project Overview
 
 Every time the input field in the dashboard changes, we run a full round-trip on our engine in the back!
+If you want to give at try, follow the instructions in the `Quick Start` section above. 
+The rest of the README explores in more details the various components.
 
-If you want to know how to build this, follow the steps below. Please refer to the post for more context on the project, some background information about the motivation and details on the use cases behind the code.
+<img src="images/flow.png" width="448">
 
 > NOTE: this project (including this README!) is written for pedagogical purposes and it is not production-ready (or even well tested!): our main goal is to provide a reference implementation of few key concepts as a starting point for future projects - so, sorry for being a bit verbose and perhaps pedantic at times.
+The project has been developed and tested on Python 3.9+.
 
-## Setup
-
-This project is pretty self-contained and requires only introductory-level familiarity with cloud services and frameworks, a bit of Python and (optionally) some dbt (which is, however, not essential to the general point).
-
-### Accounts
-
-Make sure you have:
-
-- a working AWS account;
-- [Docker](https://docs.docker.com/get-docker/) installed and running on your machine;
-- Python 3.9+ and Node.js properly installed on your machine (while you can create the container on ECR manually and then the lambda from the console, the instruction below assumes you just use the CLI for the entire setup).
-- (optional - if you want to run the analytics app) A `profiles.yml` file on your local machine to run the dbt project.
-
-> NOTE: this project has been developed and tested on Python 3.9+.
-
-### Global variables
-
-In the `src` folder, you should copy `local.env` to `.env` (do *not* commit it) and fill it with proper values:
-
-| value                 | type | description                                          |                   example |
-|-----------------------|------|------------------------------------------------------|--------------------------:|
-| AWS_ACCESS_KEY_ID     | str  | User key for AWS access                              | AKIAIO...                 |
-| AWS_SECRET_ACCESS_KEY | str  | Secret key for AWS access                            | wJalr/...                 |
-| S3_BUCKET_NAME        | str  | Bucket to host the data (must be unique)             | my-duck-bucket-130dcqda0u |
-
-These variables will be used by the setup script and the runner to communicate with AWS (S3 and Lambdas). Make sure the user has permissions to:
-
-- create a bucket and upload files to it;
-- invoke the lambda that we create below.
 
 ### Duckdb lambda
 
@@ -114,7 +84,8 @@ The `src/serverless` folder is a self-contained lambda project that uses Python 
 
 To install all the required dependencies, you need to cd into `src` and run `make nodejs-init` (`npm install` will be executed for you under the hood); finally you can build the docker image and deploy the lambda with `make serverless-deploy` (`npx serverless deploy` will be executed under the hood). The first time, deployment will take a while as it needs to create the image, ship it to AWS and create the stack - note that this is _a "one-off" thing_:
 
-![Confirmation in the terminal of the successful creation of our lambda.](images/serverless.png)
+<img src="images/serverless.png" width="448">
+
 
 > NOTE: you may get a `403 Forbidden` error when building the image: in our experience, this usually goes away with `aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws`.
 
@@ -122,16 +93,19 @@ Once the deployment is finished, you can check your AWS account to see the lambd
 
 ### Python environment
 
-From the `src` folder, run `make python-init` (a new venv will be created, activated and all the required depedencies will be installed). Then run a quick setup script with `make run_me_first`. This will accomplish a few things:
+You can create and activate a virtual environment, and install the few dependencies by `cd` into the `src` folder and by running `make python-init`. 
+Under the hood, a new venv will be created, activated and all the required dependencies will be installed.
 
-- it will upload the NYC taxi dataset to the bucket, both as a unique file and as a hive-partitioned directory;
+Then you need to run a quick setup script: `make run_me_first`. This will accomplish few things:
+
+- it will download the [NYC taxi dataset](https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page) and upload it to the bucket, both as a unique file and as a hive-partitioned directory;
 - it will print out few stats and meta-data on the dataset.
 
-If you check your AWS console, your bucket should now have a `partitioned` folder with this structure:
+If you check your AWS console, your bucked should now have a `partitioned` folder with this structure:
 
-![Bucket partitioning after the upload.](images/s3.png)
+<img src="images/s3.png" width="448">
 
-## A serverless query engine
+### A serverless query engine
 
 From the `src` folder, you can test everything is working by running:
 
@@ -151,7 +125,7 @@ Since the amount of data that can be returned by a lambda is limited, the lambda
 
 but be mindful of the infrastructure constraints!
 
-## Serverless BI architecture (Optional)
+### Serverless BI architecture (Optional)
 
 If you want to see how this architecture can bridge the gap between offline pipelines preparing artifacts, and real-time querying for BI (or other use cases), we recommend to run the [dbt DAG](https://docs.getdbt.com/terms/dag) to simulate:
 
@@ -206,7 +180,7 @@ While you can *totally* use the dashboard directly on the file in S3, we orchest
 
 If you have the dbt setup done (above), you can just run `make dbt-run`. At the end of the tiny DAG, you will end up with a new folder (and file) in the bucket (note that different warehouses would need different configurations  to export the node to the same location, e.g. [Snowflake](https://docs.snowflake.com/en/user-guide/script-data-load-transform-parquet)). This file represents the materialized view we serve from our BI:
 
-![Dashboard artifact is materialized.](images/dashboard.png)
+<img src="images/dashboard.png" width="448">
 
 > NOTE: the sql files in `dbt/models/taxi` reference directly files in the bucket, so any changes you made to the setup script should be reflected here as well.
 
@@ -214,11 +188,11 @@ If you have the dbt setup done (above), you can just run `make dbt-run`. At the 
 
 Now that we have a materialized view produced by our pipeline, it is time to query it! To run the front-end (a dashboard built with streamlit) run `make dashboard`. A page should open in the browser, displaying a chart:
 
-![Chart of popular locations in the BI tool.](images/streamlit.png)
+<img src="images/streamlit.png" width="448">
 
 You can use the form to interact in real time with the dataset (video [here](https://www.loom.com/share/9d5de3ba822a445d9d117225c1b0307f)), through the serverless infrastructure we built.
 
-## From quack to quack-reduce (Optional)
+### From quack to quack-reduce (Optional)
 
 As we mention in the blog post (_forthcoming_), an intriguing possibility of this design (going a bit more abstract compared to the immediate use cases above) is that the staless execution of SQL over an object storage (and therefore, using duckdb not really as a db, but basically as "just" a query engine) coupled with the parallel nature of AWS lambdas opens up interesting optimization possibilities.
 
