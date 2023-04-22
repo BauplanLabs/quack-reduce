@@ -5,6 +5,7 @@ A playground for running duckdb as a stateless query engine over a data lake. Th
 
 ### Setup your account
 
+
 Make sure you have:
 
 - A working AWS account;
