@@ -1,13 +1,13 @@
 # Quack-reduce
 A playground for running duckdb as a stateless query engine over a data lake. 
 The idea is to have a zero-maintenance, [very fast](https://www.loom.com/share/96f1fd938c814d0a825facb215546f03) and almost free data engine for small analytics apps. 
-This repo is the companion code for this blog post (_forthcoming_). 
+This repo is the companion code for this [blog post](https://towardsdatascience.com/a-serverless-query-engine-from-spare-parts-bd6320f10353).
 
 Please refer to the blog post for more background information and details on the use case.
 
 ## Quick Start ..ε=(｡ﾉ･ω･)ﾉ 
 
-If you read the blog post and know already what we are up to, follow the quick setup steps below to run everything in no time.
+If you read the [blog post](https://towardsdatascience.com/a-serverless-query-engine-from-spare-parts-bd6320f10353) and know already what we are up to, follow the quick setup steps below to run everything in no time.
 
 ### Setup your account
 
@@ -24,6 +24,7 @@ In the `src` folder, you should copy `local.env` to `.env` (do *not* commit it) 
 |-----------------------|------|------------------------------------------------------|--------------------------:|
 | AWS_ACCESS_KEY_ID     | str  | User key for AWS access                              | AKIAIO...                 |
 | AWS_SECRET_ACCESS_KEY | str  | Secret key for AWS access                            | wJalr/...                 |
+| AWS_DEFAULT_REGION    | str  | AWS region for the deployment                        | us-east-1                 |
 | S3_BUCKET_NAME        | str  | Bucket to host the data (must be unique)             | my-duck-bucket-130dcqda0u |
 
 These variables will be used by the setup script and the runner to communicate with AWS services. Make sure the user has the permissions to:
@@ -34,7 +35,7 @@ These variables will be used by the setup script and the runner to communicate w
 ### Run the project
 From the `src` folder:
 
->**1. Create the DuckDB Lambda:** run `make nodejs-init` and then `make serverless deploy` (after deployment, you can test the lambda is working from the [console](https://www.loom.com/share/97785a387af84924b830b9e0f35d8a1e)).
+>**1. Create the DuckDB Lambda:** run `make nodejs-init` and then `make serverless-deploy` (after deployment, you can test the lambda is working from the [console](https://www.loom.com/share/97785a387af84924b830b9e0f35d8a1e)).
 
 >**2. Build the Python env:** run `make python-init`.
 
@@ -86,15 +87,13 @@ The `src/serverless` folder is a standard [serverless](https://www.serverless.co
 - an `app.py` file, containing the actual code our lambda will execute;
 - a `../serverless.yml` file, which ties all these things together in the infra-as-code fashion, and allows us to deploy and manage the function from the CLI.
 
-The cloud setup is done for you when you run `make nodejs-init` and  `make serverless-deploy` (Step 1 in the setup list above). The first time, deployment will take a while as it needs to create the image, ship it to AWS and create the stack - note that this is _a "one-off" thing_:
-
-<img src="images/serverless.png" width="448">
+The cloud setup is done for you when you run `make nodejs-init` and  `make serverless-deploy` (Step 1 in the setup list above). The first time, deployment will take a while as it needs to create the image, ship it to AWS and [create the stack](images/serverless.png) - note that this is _a "one-off" thing_.
 
 > NOTE: you may get a `403 Forbidden` error when building the image: in our experience, this usually goes away with `aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws`.
 
 ### Interacting with the engine
 
-We can use a simple Python script to interact with our engine. First, we can test the system with a hard-coded query. Make sure you run Step 2 and Step 3 in the quick start list (to setup Python and the dataset): now, we can test test everything is working with `make test`.
+We can use a simple Python script to interact with our engine. First, we can test the system with a hard-coded query. Make sure you run Step 2 and Step 3 in the quick start list (to setup Python and the dataset): now, we can test everything is working with `make test`.
 
 If all looks good, you can now run arbitrary queries (replacing `MY_BUCKET_NAME` with your value) just by using the provided `python quack.py` script; make sure to manually activate your venv with `source ./.venv/bin/activate`, e.g. you can run
 
@@ -127,7 +126,7 @@ duckdb-taxi:
   target: dev
 ```
 
-> NOTE: since we run dbt through `make` (see below), there is no need to add credentials to the `extensions`. If you prefer to run it manually, your dbt profile should look more like this:
+> NOTE: since we run dbt through `make`, there is no need to add credentials to the `extensions`. If you prefer to run it manually, your dbt profile should look more like this:
 
 ```yaml
 # ~/.dbt/profiles.yml
@@ -160,7 +159,7 @@ You can use the form to interact in real time with the dataset (video [here](htt
 
 ### From quack to quack-reduce (Optional)
 
-As we mention in the blog post, the staless execution of SQL over an object storage (and therefore, using duckdb not really as a db, but basically as "just" a query engine) coupled with the parallel nature of AWS lambdas opens up interesting optimization possibilities.
+The staless execution of SQL over an object storage (and therefore, using duckdb not really as a db, but basically as "just" a query engine) coupled with the parallel nature of AWS lambdas opens up interesting optimization possibilities.
 
 In particular, we could rephrase (some) SQL queries through a map-reduce programming pattern *with other SQL queries*, and execute them all at the same time. To consider a trivial example, a query such as:
 
@@ -176,9 +175,7 @@ As the number of files increases (as in a typical hive-partitioned data lake), s
 
 To test out this hypothesis, we built a script that compares the same engine across different deployment patterns - local, remote etc. You can run the bechmarks with default values with `make benchmark`. The script is minimal, but should be enough to give you a feeling of how the different setups perform compared to each other, and the trade-offs involved (check the code for how it's built, but don't expect much!).
 
-[A typical run](https://www.loom.com/share/18a060b89a6a4f6d814e06ffa2674b13) will result in something like the following table (numbers will vary, but the layout should be the same):
-
-![Table benchmarking different architectures.](images/benchmarks.png)
+[A typical run](https://www.loom.com/share/18a060b89a6a4f6d814e06ffa2674b13) will result in something like this [table](images/benchmarks.png) (numbers will vary).
 
 Please refer to the blogpost for more musings on this opportunity (and the non-trivial associated challenges).
 
@@ -192,7 +189,9 @@ If you like what you've seen so far, you may wonder what you could do next! Ther
 
 * when you move from one file to multiple files, scanning parquet folders is a huge overhead: wouldn't it be nice to know where to look? While HIVE partitioning is great, modern table formats (e.g. Iceberg) are even better, so you could think of combine their table scan properties with our serverless engine. Performance aside, if you have queried `quack.py`, you know how tedious it is to fully remember the full file name every time: leveraging catalogs like Iceberg, Glue, Nessie etc. would make the experience more "database-like";
 
-* while we now run the query in memory and return a subset of row from the lambda, this pattern is certainly not perfect: on the one hand, sometime we may wish to write back the result of a query (dbt-style, so to speak); on the other, even if analytics queries are often aggregates, result tables may still grow big (row-wise): writing them to s3 and have the client stream back rows from there may be a nice feature to add! 
+* try out other use cases! For example, consider this recent [event collection](https://github.com/fal-ai/fal-events) platform. If you modify it to a dump-to-s3-then-query pattern (leveraging the engine we built with this repo), you end up with a lamda-only version of the [Snowflake architecture](https://github.com/jacopotagliabue/paas-data-ingestion) we open sourced some time ago - an end-to-end analytics platform running on lambdas;
+
+* while we now run the query in memory and return a subset of row from the lambda, this pattern is certainly not perfect: on the one hand, sometime we may wish to write back the result of a query (dbt-style, so to speak); on the other, even if analytics queries are often aggregates, result tables may still grow big (row-wise): writing them to s3 and have the client stream back rows from there may be a nice feature to add!
 
 ## License
 
