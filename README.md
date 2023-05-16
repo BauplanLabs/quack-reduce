@@ -13,7 +13,7 @@ If you read the [blog post](https://towardsdatascience.com/a-serverless-query-en
 
 Make sure you have:
 
-- A working AWS account;
+- A working AWS account and an access key with [sufficient priviledges to deploy a lambda instance](https://www.serverless.com/framework/docs/providers/aws/guide/credentials) -- this could be the `AdministratorAccess` policy in AWS IAM, or something more fine grained;
 - [Docker](https://docs.docker.com/get-docker/) installed and running on your machine;
 - Python 3.9+ and Node.js properly installed on your machine;
 - A `profiles.yaml` file on your local machine to run the dbt project.
@@ -35,7 +35,7 @@ These variables will be used by the setup script and the runner to communicate w
 ### Run the project
 From the `src` folder:
 
->**1. Create the DuckDB Lambda:** run `make nodejs-init` and then `make serverless-deploy` (after deployment, you can test the lambda is working from the [console](https://www.loom.com/share/97785a387af84924b830b9e0f35d8a1e)).
+>**1. Create the DuckDB Lambda:** run `make nodejs-init` and then `make serverless-deploy`.  Note that `src/serverless.yml` is configured to use `arm64`. This does a local Docker build, so if you're on an `x86_64` machine, it will fail.  Replace `arm64` with `x86_64` as needed.  After deployment, you can test the lambda is working from the [console](https://www.loom.com/share/97785a387af84924b830b9e0f35d8a1e).
 
 >**2. Build the Python env:** run `make python-init`.
 
@@ -56,7 +56,7 @@ duckdb-taxi:
         - parquet
   target: dev
 ```
->**6. Run the dbt project:** run make `dbt-run`.
+>**6. Run the dbt project:** run `make dbt-run`.
 
 >**7. Run the Analytics app:** run `make dashboard`.
 

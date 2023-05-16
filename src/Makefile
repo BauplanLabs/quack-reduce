@@ -1,5 +1,8 @@
 include .env
 
+# need bash because we use the "source" command (otherwise it fails when make defaults to /bin/sh)
+SHELL=bash
+
 nodejs-init:
 	npm install
 .PHONY: nodejs-init
@@ -17,15 +20,15 @@ run_me_first:
 .PHONY: run_me_first
 
 test:
-	source ./.venv/bin/activate && python quack.py
+	source ./.venv/bin/activate && python3 quack.py
 .PHONY: test
 
 test-distinct:
-	source ./.venv/bin/activate && python quack.py -q "SELECT pickup_location_id AS location_id, COUNT(*) AS counts FROM read_parquet(['s3://${S3_BUCKET_NAME}/dataset/taxi_2019_04.parquet']) WHERE pickup_at >= '2019-04-01' AND pickup_at < '2019-04-03' GROUP BY 1 ORDER BY 2 DESC"
+	source ./.venv/bin/activate && python3 quack.py -q "SELECT pickup_location_id AS location_id, COUNT(*) AS counts FROM read_parquet(['s3://${S3_BUCKET_NAME}/dataset/taxi_2019_04.parquet']) WHERE pickup_at >= '2019-04-01' AND pickup_at < '2019-04-03' GROUP BY 1 ORDER BY 2 DESC"
 .PHONY: test-distinct
 
 benchmark:
-	source ./.venv/bin/activate && python benchmark.py
+	source ./.venv/bin/activate && python3 benchmark.py
 .PHONY: benchmark
 
 dbt-run:
