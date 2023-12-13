@@ -1,4 +1,4 @@
-requests==2.28.2
+requests==2.31.0
 streamlit==1.20.0
 python-dotenv==1.0.0
 fsspec==2023.4.0
